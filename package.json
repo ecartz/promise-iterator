@@ -31,6 +31,10 @@
   ],
   "author": "Matt Fletcher",
   "license": "LGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ecartz/promise-iterator.git"
+  },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
