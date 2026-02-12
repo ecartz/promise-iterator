@@ -12,9 +12,13 @@
       "require": "./dist/index.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=14"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -34,6 +38,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/ecartz/promise-iterator.git"
+  },
+  "homepage": "https://github.com/ecartz/promise-iterator#readme",
+  "bugs": {
+    "url": "https://github.com/ecartz/promise-iterator/issues"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
