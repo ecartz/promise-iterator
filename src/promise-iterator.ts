@@ -1,14 +1,19 @@
 /**
  * Result from a resolved or rejected promise.
  */
-export interface PromiseResult<T> {
-    /** The resolved value (if successful) */
-    result?: T;
-    /** The rejection reason (if rejected) — preserved as-is from the promise */
-    error?: unknown;
-    /** The original index in the input array */
-    index: number;
-}
+export type PromiseResult<T> =
+    | {
+        /** The resolved value */
+        result: T;
+        /** The original index in the input array */
+        index: number;
+    }
+    | {
+        /** The rejection reason — preserved as-is from the promise */
+        error: unknown;
+        /** The original index in the input array */
+        index: number
+    };
 
 /**
  * Async iterator that yields promise results in completion order.
@@ -24,12 +29,12 @@ export interface PromiseResult<T> {
  *     fetch('/api/fails').then(r => r.json()),
  * ];
  *
- * for await (const { result, error, index } of new PromiseIterator(promises)) {
- *     if (error === undefined) {
- *         console.log(`Promise ${index} resolved:`, result);
+ * for await (const entry of new PromiseIterator(promises)) {
+ *     if ('result' in entry) {
+ *         console.log(`Promise ${entry.index} resolved:`, entry.result);
  *     } else {
- *         const message = error instanceof Error ? error.message : String(error);
- *         console.log(`Promise ${index} failed:`, message);
+ *         const message = entry.error instanceof Error ? entry.error.message : String(entry.error);
+ *         console.log(`Promise ${entry.index} failed:`, message);
  *     }
  * }
  * ```
@@ -89,7 +94,7 @@ export class PromiseIterator<T> implements AsyncIterator<PromiseResult<T>> {
             results.push(result);
         }
 
-	return results;
+        return results;
     }
 
     /**

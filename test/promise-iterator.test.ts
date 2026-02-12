@@ -13,8 +13,10 @@ describe('PromiseIterator', () => {
             ];
 
             const results: string[] = [];
-            for await (const { result } of new PromiseIterator(promises)) {
-                results.push(result!);
+            for await (const entry of new PromiseIterator(promises)) {
+                if ('result' in entry) {
+                    results.push(entry.result);
+                }
             }
 
             expect(results).toEqual(['fast', 'medium', 'slow']);
@@ -49,9 +51,10 @@ describe('PromiseIterator', () => {
 
             expect(results).toHaveLength(3);
 
-            const failure = results.find(r => r.error);
-            expect(failure?.error).toBeInstanceOf(Error);
-            expect((failure?.error as Error).message).toBe('failure');
+            const failure = results.find(r => 'error' in r);
+            expect(failure).toBeDefined();
+            expect('error' in failure! && failure.error).toBeInstanceOf(Error);
+            expect('error' in failure! && (failure.error as Error).message).toBe('failure');
 
             expect(results.filter(r => 'result' in r)).toHaveLength(2);
         });
@@ -61,9 +64,9 @@ describe('PromiseIterator', () => {
                 Promise.reject('string error'),
             ];
 
-            const [result] = await new PromiseIterator(promises).all();
+            const [entry] = await new PromiseIterator(promises).all();
 
-            expect(result.error).toBe('string error');
+            expect('error' in entry && entry.error).toBe('string error');
         });
 
     });
@@ -80,7 +83,8 @@ describe('PromiseIterator', () => {
             const results = await new PromiseIterator(promises).all();
 
             expect(results).toHaveLength(3);
-            expect(results.map(r => r.result).sort()).toEqual([1, 2, 3]);
+            const values = results.filter(r => 'result' in r).map(r => r.result);
+            expect(values.sort()).toEqual([1, 2, 3]);
         });
 
     });
@@ -124,8 +128,43 @@ describe('PromiseIterator', () => {
             const results = await new PromiseIterator([Promise.resolve('only')]).all();
 
             expect(results).toHaveLength(1);
-            expect(results[0].result).toBe('only');
+            expect('result' in results[0] && results[0].result).toBe('only');
             expect(results[0].index).toBe(0);
+        });
+
+    });
+
+    describe('undefined edge cases', () => {
+
+        it('should distinguish resolved undefined from rejection', async () => {
+            const promises = [
+                Promise.resolve(undefined),
+                Promise.reject(new Error('fail')),
+            ];
+
+            const results = await new PromiseIterator(promises).all();
+
+            const success = results.find(r => 'result' in r);
+            const failure = results.find(r => 'error' in r);
+
+            expect(success).toBeDefined();
+            expect('result' in success!).toBe(true);
+            expect('result' in success! && success.result).toBeUndefined();
+
+            expect(failure).toBeDefined();
+            expect('error' in failure!).toBe(true);
+        });
+
+        it('should distinguish rejection with undefined from success', async () => {
+            const promises = [
+                Promise.reject(undefined),
+            ];
+
+            const [entry] = await new PromiseIterator(promises).all();
+
+            expect('error' in entry).toBe(true);
+            expect('result' in entry).toBe(false);
+            expect('error' in entry && entry.error).toBeUndefined();
         });
 
     });

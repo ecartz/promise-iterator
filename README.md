@@ -34,12 +34,12 @@ const promises = [
 ];
 
 // Results arrive in completion order (fast first, then medium, then slow)
-for await (const { result, error, index } of new PromiseIterator(promises)) {
-    if (error === undefined) {
-        console.log(`Request ${index} completed:`, result);
+for await (const entry of new PromiseIterator(promises)) {
+    if ('result' in entry) {
+        console.log(`Request ${entry.index} completed:`, entry.result);
     } else {
-        const message = error instanceof Error ? error.message : String(error);
-        console.log(`Request ${index} failed:`, message);
+        const message = entry.error instanceof Error ? entry.error.message : String(entry.error);
+        console.log(`Request ${entry.index} failed:`, message);
     }
 }
 ```
@@ -50,7 +50,7 @@ for await (const { result, error, index } of new PromiseIterator(promises)) {
 const results = await new PromiseIterator(promises).all();
 
 // Results are in completion order, not input order.
-// Use 'result' in r to handle falsy values (0, "", null):
+// Use 'in' to narrow the discriminated union:
 const successes = results.filter(r => 'result' in r);
 const failures = results.filter(r => 'error' in r);
 
@@ -90,14 +90,12 @@ Creates an async iterator over the given promises. An empty array is valid — t
 ### `PromiseResult<T>`
 
 ```typescript
-interface PromiseResult<T> {
-    result?: T;       // Resolved value (if successful)
-    error?: unknown;  // Rejection reason (if rejected)
-    index: number;    // Original index in input array
-}
+type PromiseResult<T> =
+    | { result: T; index: number }    // Resolved
+    | { error: unknown; index: number }; // Rejected
 ```
 
-**Error handling:** Rejection values are preserved as-is. Use `error instanceof Error` to narrow the type if needed.
+Use `'result' in entry` or `'error' in entry` to narrow the union. Rejection values are preserved as-is.
 
 ### Properties
 
